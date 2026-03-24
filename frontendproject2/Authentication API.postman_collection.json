@@ -1,0 +1,305 @@
+{
+  "info": {
+    "_postman_id": "ed29a62a-0c19-49e1-9e57-6bfdf0c3bc26",
+    "name": "Authentication API",
+    "description": "Complete collection for Auth API testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "33130051"
+  },
+  "item": [
+    {
+      "name": "1. Registration",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://mtc2sxv3-5000.inc1.devtunnels.ms/auth/register",
+          "protocol": "https",
+          "host": [
+            "mtc2sxv3-5000",
+            "inc1",
+            "devtunnels",
+            "ms"
+          ],
+          "path": [
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.success) {",
+              "    pm.environment.set(\"accessToken\", jsonData.data.tokens.accessToken);",
+              "    pm.environment.set(\"refreshToken\", jsonData.data.tokens.refreshToken);",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePass123!\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://mtc2sxv3-5000.inc1.devtunnels.ms/auth/login",
+          "protocol": "https",
+          "host": [
+            "mtc2sxv3-5000",
+            "inc1",
+            "devtunnels",
+            "ms"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://mtc2sxv3-5000.inc1.devtunnels.ms/auth/refresh",
+          "protocol": "https",
+          "host": [
+            "mtc2sxv3-5000",
+            "inc1",
+            "devtunnels",
+            "ms"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. Get Current User (Me)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://mtc2sxv3-5000.inc1.devtunnels.ms/auth/me",
+          "protocol": "https",
+          "host": [
+            "mtc2sxv3-5000",
+            "inc1",
+            "devtunnels",
+            "ms"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5. Update Profile",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Jonathan\",\n  \"lastName\": \"Doea\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://mtc2sxv3-5000.inc1.devtunnels.ms/auth/profile",
+          "protocol": "https",
+          "host": [
+            "mtc2sxv3-5000",
+            "inc1",
+            "devtunnels",
+            "ms"
+          ],
+          "path": [
+            "auth",
+            "profile"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. Forgot Password",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john.doe@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://mtc2sxv3-5000.inc1.devtunnels.ms/auth/forgot-password",
+          "protocol": "https",
+          "host": [
+            "mtc2sxv3-5000",
+            "inc1",
+            "devtunnels",
+            "ms"
+          ],
+          "path": [
+            "auth",
+            "forgot-password"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7. Reset Password",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"6957ec961728813c81d11c10a3f8579c153b8e16\",\n  \"password\": \"NewSecurePass456!1\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://mtc2sxv3-5000.inc1.devtunnels.ms/auth/reset-password",
+          "protocol": "https",
+          "host": [
+            "mtc2sxv3-5000",
+            "inc1",
+            "devtunnels",
+            "ms"
+          ],
+          "path": [
+            "auth",
+            "reset-password"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8. Logout",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "https://mtc2sxv3-5000.inc1.devtunnels.ms/auth/logout",
+          "protocol": "https",
+          "host": [
+            "mtc2sxv3-5000",
+            "inc1",
+            "devtunnels",
+            "ms"
+          ],
+          "path": [
+            "auth",
+            "logout"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "info": {
+    "name": "Permission Backend (Express/Mongoose + Auth)",
+    "_postman_id": "97b6f9d0-5c4d-4f1f-9d0a-perm-demo",
+    "description": "Complete Postman collection for the permission backend. Uses bearer auth variable {{token}} (populate via Login call). Set {{baseUrl}} to your server, e.g., http://localhost:4000.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "roleId", "value": "role_marketing" },
+    { "key": "userId", "value": "user_marcy" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (seed users use password123)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"alice@demo.test\",\n  \"password\": \"password123\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Me (profile)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/me" }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpass456\"\n}" },
+            "url": "{{baseUrl}}/me/password"
+          }
+        }
+      ]
+    },
+    { "name": "Health", "request": { "method": "GET", "url": "{{baseUrl}}/health" } },
+    { "name": "Resources", "request": { "method": "GET", "url": "{{baseUrl}}/resources" } },
+    { "name": "Permissions (alias of resources)", "request": { "method": "GET", "url": "{{baseUrl}}/permissions" } },
+    {
+      "name": "Roles",
+      "item": [
+        { "name": "List Roles", "request": { "method": "GET", "url": "{{baseUrl}}/roles" } },
+        { "name": "Get Role", "request": { "method": "GET", "url": "{{baseUrl}}/roles/{{roleId}}" } },
+        { "name": "Role Permissions", "request": { "method": "GET", "url": "{{baseUrl}}/roles/{{roleId}}/permissions" } },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Blog Publisher\",\n  \"description\": \"Can publish blogs\",\n  \"permissions\": [\n    { \"resource\": \"blogs\", \"actions\": [\"view\", \"publish\"] }\n  ]\n}" },
+            "url": "{{baseUrl}}/roles"
+          }
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"description\": \"Updated description\",\n  \"permissions\": [\n    { \"resource\": \"blogs\", \"actions\": [\"view\", \"edit\", \"publish\"] }\n  ]\n}" },
+            "url": "{{baseUrl}}/roles/{{roleId}}"
+          }
+        },
+        {
+          "name": "Add Permission to Role",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"resource\": \"analytics\",\n  \"actions\": [\"export\"]\n}" },
+            "url": "{{baseUrl}}/roles/{{roleId}}/permissions"
+          }
+        },
+        {
+          "name": "Remove Permission from Role (entire resource)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"resource\": \"analytics\"\n}" },
+            "url": "{{baseUrl}}/roles/{{roleId}}/permissions"
+          }
+        },
+        {
+          "name": "Remove Specific Actions from Role",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"resource\": \"blogs\",\n  \"actions\": [\"publish\"]\n}" },
+            "url": "{{baseUrl}}/roles/{{roleId}}/permissions"
+          }
+        },
+        { "name": "Delete Role", "request": { "method": "DELETE", "url": "{{baseUrl}}/roles/{{roleId}}" } }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        { "name": "List Users", "request": { "method": "GET", "url": "{{baseUrl}}/users" } },
+        { "name": "Get User", "request": { "method": "GET", "url": "{{baseUrl}}/users/{{userId}}" } },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"New User\",\n  \"email\": \"new@demo.test\",\n  \"password\": \"password123\",\n  \"roleIds\": [\"role_viewer\"]\n}" },
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Renamed User\"\n}" },
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Add Role to User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"roleId\": \"role_marketing\"\n}" },
+            "url": "{{baseUrl}}/users/{{userId}}/roles"
+          }
+        },
+        {
+          "name": "Remove Role from User",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/users/{{userId}}/roles/role_marketing"
+          }
+        },
+        {
+          "name": "User Permissions",
+          "request": { "method": "GET", "url": "{{baseUrl}}/users/{{userId}}/permissions" }
+        }
+      ]
+    },
+    {
+      "name": "Profiles",
+      "item": [
+        { "name": "List Profiles", "request": { "method": "GET", "url": "{{baseUrl}}/profiles" } },
+        { "name": "Profile by User", "request": { "method": "GET", "url": "{{baseUrl}}/profiles/{{userId}}" } }
+      ]
+    },
+    {
+      "name": "Access Evaluation",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"userId\": \"user_alice\",\n  \"resource\": \"blogs\",\n  \"action\": \"publish\"\n}" },
+        "url": "{{baseUrl}}/evaluate"
+      }
+    },
+    { "name": "Reset (Reseed)", "request": { "method": "POST", "url": "{{baseUrl}}/reset" } }
+  ]
+}

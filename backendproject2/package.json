@@ -1,0 +1,31 @@
+{
+  "name": "permission-management-task",
+  "version": "1.0.0",
+  "description": "Self contained permission/role demo backend with realtime socket updates for interns.",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node scripts/seed.js"
+  },
+  "keywords": [
+    "permissions",
+    "roles",
+    "rbac",
+    "websocket",
+    "demo"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.4.1",
+    "morgan": "^1.10.0",
+    "socket.io": "^4.7.5"
+  }
+}
