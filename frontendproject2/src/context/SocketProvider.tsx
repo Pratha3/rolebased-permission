@@ -7,12 +7,14 @@ import { useAuthStore } from "@/store/userStore";
 import { toast } from "sonner";
 import type { Role, Permission } from "@/types/auth";
 import { getId } from "@/types/auth";
+import { useRouter } from "next/navigation";
 
 const SocketContext = createContext<Socket | null>(null);
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
-  const userId = useAuthStore((s) =>s.user?._id);
+  const router = useRouter();
+  const userId = useAuthStore((s) => s.user?._id);
   const isLoading = useAuthStore((s) => s.isLoading);
   const socketRef = useRef<Socket | null>(null);
 
@@ -26,7 +28,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     socket.on("connect", () => {
       console.log("socket connected");
-      toast.success("Realtime connected");
+      router.refresh();
     });
 
     socket.on("connect_error", (err) => {
@@ -49,7 +51,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socket.on("role.updated", (updatedRole: Role) => {
       console.log("socket event: role.updated, role:", updatedRole.name);
 
-      const { roles, updateRoleInList, setPermissions } = useAuthStore.getState();
+      const { roles, updateRoleInList, setPermissions } =
+        useAuthStore.getState();
       const updatedId = getId(updatedRole);
 
       // Only care if current user has this role
@@ -70,10 +73,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         });
       });
 
-      const newPermissions: Permission[] = Array.from(permMap.entries()).map(([resource, actions]) => ({
-        resource,
-        actions: Array.from(actions),
-      }));
+      const newPermissions: Permission[] = Array.from(permMap.entries()).map(
+        ([resource, actions]) => ({
+          resource,
+          actions: Array.from(actions),
+        }),
+      );
 
       setPermissions(newPermissions);
       console.log("permissions recalculated, count:", newPermissions.length);
@@ -84,10 +89,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socket.on("user.permissions", (data) => {
       console.log("socket event: user.permissions");
 
-      const { user, permissions: oldPermissions, setUserProfile } = useAuthStore.getState();
+      const {
+        user,
+        permissions: oldPermissions,
+        setUserProfile,
+      } = useAuthStore.getState();
       const incomingUserId = data?.user?.id ?? data?.user?._id;
 
-      if (!user || incomingUserId !== (user._id)) return;
+      if (!user || incomingUserId !== user._id) return;
 
       const roles: Role[] = data?.roles ?? [];
       const permissions: Permission[] = data?.permissions ?? [];
@@ -96,7 +105,15 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         .filter((old) => !permissions.find((p) => p.resource === old.resource))
         .map((p) => p.resource);
 
-      setUserProfile(user, roles, permissions);
+      setUserProfile(user, data.roles, data.permissions);
+
+      // 2. Show the toast
+      toast.success("Permissions updated by admin");
+
+      // 3. Delay the refresh so the toast isn't immediately destroyed
+      setTimeout(() => {
+        router.refresh();
+      }, 100);
 
       if (lostResources.length > 0) {
         toast.warning("Permissions updated by admin", {
@@ -114,7 +131,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("socket cleanup");
       socket.removeAllListeners();
     };
-  }, [userId, isLoading]);
+  }, [userId, isLoading, router]);
 
   useEffect(() => {
     return () => disposeSocket();

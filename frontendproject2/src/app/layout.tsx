@@ -12,9 +12,6 @@ export const metadata: Metadata = {
   description: "Secure authentication with Next.js",
 };
 
-
-
-
 export default function RootLayout({
   children,
 }: Readonly<{
