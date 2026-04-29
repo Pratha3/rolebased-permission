@@ -1,178 +1,128 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { createContext, useContext, useEffect, useRef } from "react";
 import type { Socket } from "socket.io-client";
 import { getSocket, disposeSocket } from "@/lib/socket";
 import { useAuthStore } from "@/store/userStore";
-import { normalizeId, normalizeList } from "@/lib/normalize";
 import { toast } from "sonner";
-
-interface SocketProviderProps {
-  children: React.ReactNode;
-}
+import type { Role, Permission } from "@/types/auth";
+import { getId } from "@/types/auth";
 
 const SocketContext = createContext<Socket | null>(null);
 export const useSocket = () => useContext(SocketContext);
 
-export const SocketProvider = ({ children }: SocketProviderProps) => {
-  
-  const userId = useAuthStore((s) => s.user?.id);
-  const token = useAuthStore((s) => s.token);
-
-  
-  const setSnapshot = useAuthStore((s) => s.setSnapshot);
-  const updateRole = useAuthStore((s) => s.updateRole);
-  const updateUser = useAuthStore((s) => s.updateUser);
-  const setUserPermissions = useAuthStore((s) => s.setUserPermissions);
-
-  
-  const [socket] = useState<Socket>(() => getSocket());
+export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
+  const userId = useAuthStore((s) =>s.user?._id);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    if (!socket) return;
-    if (token) socket.auth = { token };
-    else if (userId) socket.auth = { userId };
+    if (isLoading) return;
 
-    
-    const onConnect = (..._args: any[]) => {
-      console.debug("socket connected");
+    console.log("socket connecting, user:", userId || "anonymous");
+
+    const socket = getSocket(userId);
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("socket connected");
       toast.success("Realtime connected");
-    };
+    });
 
-    const onConnectError = (...args: any[]) => {
-      const err = args[0];
-      console.error("socket connect_error", err);
-      toast.error("Realtime connection error");
- 
-    };
+    socket.on("connect_error", (err) => {
+      console.error("socket error:", err.message);
+    });
 
-    const onSnapshot = (...args: any[]) => {
-      const payload = args[0];
-      const snapshot = {
-        resources: normalizeList(payload?.resources),
-        roles: normalizeList(payload?.roles),
-        users: normalizeList(payload?.users),
-        viewer: payload?.viewer
-          ? {
-              user: payload.viewer.user
-                ? normalizeId(payload.viewer.user)
-                : undefined,
-              roles: payload.viewer.roles
-                ? normalizeList(payload.viewer.roles)
-                : undefined,
-              permissions: payload.viewer.permissions ?? undefined,
-            }
-          : undefined,
-      };
-      setSnapshot(snapshot);
-      toast("Permissions snapshot received", { description: "Realtime data synchronized" });
-    };
+    // snapshot.viewer is pre-mapped by backend (has id), snapshot.roles/users are raw (_id)
+    socket.on("snapshot", (payload) => {
+      console.log("socket event: snapshot");
+      const { setUserProfile, user } = useAuthStore.getState();
 
-    const onRoleCreated = (...args: any[]) => {
-      const role = normalizeId(args[0]);
-      updateRole("create", role);
-      toast.success(`Role created: ${role.name ?? role.id}`);
-    };
-
-    const onRoleUpdated = (...args: any[]) => {
-      const role = normalizeId(args[0]);
-      updateRole("update", role);
-      toast.success(`Role updated: ${role.name ?? role.id}`);
-    };
-
-    const onRoleDeleted = (...args: any[]) => {
-      const payload = args[0] ?? {};
-      const id = payload.id ?? payload._id;
-      updateRole("delete", { id });
-      toast(`${payload.name ?? id} role deleted`);
-    };
-
-    const onUserCreated = (...args: any[]) => {
-      const user = normalizeId(args[0]);
-      updateUser("create", user);
-      toast.success(`User created: ${user.name ?? user.email ?? user.id}`);
-    };
-
-    const onUserUpdated = (...args: any[]) => {
-      const user = normalizeId(args[0]);
-      updateUser("update", user);
-
-      
-      if (userId && user.id === userId) {
-        toast.success("Your profile was updated");
-      } else {
-        toast(`User updated: ${user.name ?? user.email ?? user.id}`);
+      if (payload?.viewer && user) {
+        const roles: Role[] = payload.viewer.roles ?? [];
+        const permissions: Permission[] = payload.viewer.permissions ?? [];
+        setUserProfile(user, roles, permissions);
       }
-    };
+    });
 
-    const onUserPermissions = (...args: any[]) => {
-      const p = args[0];
-      const profile = {
-        user: normalizeId(p?.user),
-        roles: normalizeList(p?.roles),
-        permissions: p?.permissions ?? [],
-      };
-      setUserPermissions(profile);
+    // role.updated: raw mongo doc, may have _id
+    socket.on("role.updated", (updatedRole: Role) => {
+      console.log("socket event: role.updated, role:", updatedRole.name);
 
-      
-      if (profile.user && profile.user.id && profile.user.id === userId) {
-        toast.success("Your permissions changed");
-      } 
-    };
+      const { roles, updateRoleInList, setPermissions } = useAuthStore.getState();
+      const updatedId = getId(updatedRole);
 
-    // register listeners
-    socket.on("connect", onConnect);
-    socket.on("connect_error", onConnectError);
-    socket.on("snapshot", onSnapshot);
+      // Only care if current user has this role
+      const userHasRole = roles.some((r) => getId(r) === updatedId);
+      if (!userHasRole) return;
 
-    socket.on("role.created", onRoleCreated);
-    socket.on("role.updated", onRoleUpdated);
-    socket.on("role.deleted", onRoleDeleted);
+      updateRoleInList(updatedRole);
 
-    socket.on("user.created", onUserCreated);
-    socket.on("user.updated", onUserUpdated);
+      // Recalculate merged permissions from all user roles
+      const updatedRoles = useAuthStore.getState().roles;
+      const permMap = new Map<string, Set<string>>();
 
-    socket.on("user.permissions", onUserPermissions);
+      updatedRoles.forEach((role) => {
+        role.permissions?.forEach((perm) => {
+          const actions = permMap.get(perm.resource) ?? new Set<string>();
+          perm.actions.forEach((a) => actions.add(a));
+          permMap.set(perm.resource, actions);
+        });
+      });
 
-    
+      const newPermissions: Permission[] = Array.from(permMap.entries()).map(([resource, actions]) => ({
+        resource,
+        actions: Array.from(actions),
+      }));
+
+      setPermissions(newPermissions);
+      console.log("permissions recalculated, count:", newPermissions.length);
+      toast.info(`Your "${updatedRole.name}" role permissions were updated`);
+    });
+
+    // user.permissions: backend pre-maps _id → id
+    socket.on("user.permissions", (data) => {
+      console.log("socket event: user.permissions");
+
+      const { user, permissions: oldPermissions, setUserProfile } = useAuthStore.getState();
+      const incomingUserId = data?.user?.id ?? data?.user?._id;
+
+      if (!user || incomingUserId !== (user._id)) return;
+
+      const roles: Role[] = data?.roles ?? [];
+      const permissions: Permission[] = data?.permissions ?? [];
+
+      const lostResources = oldPermissions
+        .filter((old) => !permissions.find((p) => p.resource === old.resource))
+        .map((p) => p.resource);
+
+      setUserProfile(user, roles, permissions);
+
+      if (lostResources.length > 0) {
+        toast.warning("Permissions updated by admin", {
+          description: `Lost access to: ${lostResources.join(", ")}`,
+          duration: 10000,
+        });
+      } else {
+        toast.success("Your permissions were updated");
+      }
+    });
+
     socket.connect();
 
-    
     return () => {
-      socket.off("connect", onConnect);
-      socket.off("connect_error", onConnectError);
-      socket.off("snapshot", onSnapshot);
-
-      socket.off("role.created", onRoleCreated);
-      socket.off("role.updated", onRoleUpdated);
-      socket.off("role.deleted", onRoleDeleted);
-
-      socket.off("user.created", onUserCreated);
-      socket.off("user.updated", onUserUpdated);
-
-      socket.off("user.permissions", onUserPermissions);
-
-     
+      console.log("socket cleanup");
+      socket.removeAllListeners();
     };
-   
-  }, [
-    socket,
-    userId,
-    token,
-    setSnapshot,
-    updateRole,
-    updateUser,
-    setUserPermissions,
-  ]);
+  }, [userId, isLoading]);
 
-  const value = useMemo(() => socket, [socket]);
+  useEffect(() => {
+    return () => disposeSocket();
+  }, []);
+
   return (
-    <SocketContext.Provider value={value}>{children}</SocketContext.Provider>
+    <SocketContext.Provider value={socketRef.current}>
+      {children}
+    </SocketContext.Provider>
   );
 };

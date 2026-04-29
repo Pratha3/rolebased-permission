@@ -1,6 +1,7 @@
 "use client";
 
 import { Sidebar } from "@/components/common/sidebar";
+import { PermissionWatcher } from "@/components/permission/permissionwatcher";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStore } from "@/store/userStore";
 import { Menu, Search, X } from "lucide-react";
@@ -15,11 +16,12 @@ export default function DashboardLayout({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  
-  
+
+
 
   return (
     <div className="flex min-h-screen flex-col">
+      <PermissionWatcher />
       <div className="flex flex-1 overflow-hidden">
         <aside className="hidden md:block md:w-60 border-r border-slate-800 bg-linear-to-b from-slate-950 to-slate-900">
           <Sidebar />

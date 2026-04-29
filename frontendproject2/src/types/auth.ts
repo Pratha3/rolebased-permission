@@ -42,3 +42,7 @@ export interface LoginCredentials {
   email: string;
   password: string;
 }
+
+export function getId(obj:{_id?:string}):string{
+  return (obj._id) as string;
+}

@@ -1,7 +1,6 @@
 //useMemo avoid maultiple re-render
 
 import { useMemo } from "react";
-
 import { useAuthStore } from "@/store/userStore";
 
 export type Permission = { resource: string; actions: string[] };
@@ -9,14 +8,16 @@ export type Permission = { resource: string; actions: string[] };
 const norm = (s?: string) => (s || "").toLowerCase();
 
 function usePermissionState() {
-  //select permission from the store
+  // Select both permissions and timestamp - Zustand will handle shallow comparison automatically
   const perms = useAuthStore((s) => s.permissions as Permission[]);
-  //if permission change the useMemo will be render
+  const lastUpdate = useAuthStore((s) => s.lastPermissionUpdate);
+
+  //if permission change or timestamp changes, useMemo will re-render
   return useMemo(() => {
     //using map fast lookup for whether an action exsits for resource and avoids duplicate via set
     const map = new Map<string, Set<string>>();
     //user has resource "*" then globalAll becomes true and user have full access.
-    const globalAll = perms?.some(p => 
+    const globalAll = perms?.some(p =>
       norm(p.resource) === "*" && p.actions.some(a => ["*", "manage"].includes(norm(a)))
     );
 
@@ -30,7 +31,7 @@ function usePermissionState() {
     });
 
     return { map, globalAll };
-  }, [perms]);
+  }, [perms, lastUpdate]);
 }
 
 /** Permission Hooks */
@@ -59,8 +60,8 @@ export function useAccessibleResources(): string[] {
 }
 
 /** Role Hooks */
-//current user has a role with the given id 
-export const useHasRole = (id: string) => useAuthStore(s => s.roles.some(r => r.id === id));
+import { getId } from "@/types/auth";
+export const useHasRole = (id: string) => useAuthStore(s => s.roles.some(r => getId(r) === id));
 export const useIsAdmin = () => useHasRole("role_admin");
 export const useIsMarketing = () => useHasRole("role_marketing");
 export const useIsSales = () => useHasRole("role_sales");

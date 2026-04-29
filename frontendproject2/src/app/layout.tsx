@@ -1,12 +1,10 @@
-import { Inter } from "next/font/google";
-
-import "./globals.css";
+import { Imprima, Inter } from "next/font/google";
 import { Metadata } from "next";
 import QueryProvider from "@/components/provider/query-provider";
 import { AuthProvider } from "@/components/provider";
 import { Toaster } from "sonner";
 import { SocketProvider } from "@/context/SocketProvider";
-
+import './globals.css'
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
