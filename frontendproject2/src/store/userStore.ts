@@ -68,14 +68,20 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   // When a role.updated socket event arrives, replace that role in the list.
   updateRoleInList: (updatedRole) => {
-    set((prev) => ({
-      roles: prev.roles.map((r) => getId(r) === getId(updatedRole) ? updatedRole : r),
-    }));
-  },
+  const updatedId = getId(updatedRole);
+  set((prev) => ({
+    // Use map to create a new array reference
+    roles: prev.roles.map((r) => (getId(r) === updatedId ? { ...updatedRole } : r)),
+    lastPermissionUpdate: Date.now(), // Bump this here too
+  }));
+},
 
-  // When permissions are recalculated, update them and bump the timestamp
-  // so usePermission hook re-runs its useMemo.
-  setPermissions: (permissions) => {
-    set({ permissions, lastPermissionUpdate: Date.now() });
-  },
+setPermissions: (newPermissions) => {
+  set({ 
+    // Force a new array and new objects inside
+    permissions: JSON.parse(JSON.stringify(newPermissions)), 
+    lastPermissionUpdate: Date.now() 
+  });
+},
+
 }));

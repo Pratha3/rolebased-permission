@@ -49,23 +49,23 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     // role.updated: raw mongo doc, may have _id
     socket.on("role.updated", (updatedRole: Role) => {
-      console.log("socket event: role.updated, role:", updatedRole.name);
-
-      const { roles, updateRoleInList, setPermissions } =
-        useAuthStore.getState();
+      const store = useAuthStore.getState();
       const updatedId = getId(updatedRole);
 
-      // Only care if current user has this role
-      const userHasRole = roles.some((r) => getId(r) === updatedId);
-      if (!userHasRole) return;
+      // 1. Verify the user actually possesses this role
+      const hasThisRole = store.roles.some((r) => getId(r) === updatedId);
+      if (!hasThisRole) return;
 
-      updateRoleInList(updatedRole);
+      // 2. Perform the update in the store
+      store.updateRoleInList(updatedRole);
 
-      // Recalculate merged permissions from all user roles
-      const updatedRoles = useAuthStore.getState().roles;
+      // 3. IMPORTANT: Get the NEW roles array from the store AFTER updateRoleInList
+      const freshRoles = useAuthStore.getState().roles;
+
       const permMap = new Map<string, Set<string>>();
 
-      updatedRoles.forEach((role) => {
+      // 4. Recalculate using the FRESH data
+      freshRoles.forEach((role) => {
         role.permissions?.forEach((perm) => {
           const actions = permMap.get(perm.resource) ?? new Set<string>();
           perm.actions.forEach((a) => actions.add(a));
@@ -80,36 +80,51 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         }),
       );
 
-      setPermissions(newPermissions);
-      console.log("permissions recalculated, count:", newPermissions.length);
-      toast.info(`Your "${updatedRole.name}" role permissions were updated`);
+      // 5. Update permissions - this triggers the Zustand subscription and the UI
+      store.setPermissions(newPermissions);
+
+      console.log("✅ UI Sync: Permissions recalculated from updated role");
+      toast.success(`Role "${updatedRole.name}" updated`);
+
+      // router.refresh() handles Server Components, Zustand handles the rest
       router.refresh();
     });
 
     // user.permissions: backend pre-maps _id → id
     socket.on("user.permissions", (data) => {
-      console.log("socket event: user.permissions");
+      console.log("socket event: user.permissions", data);
 
-      const {
-        user,
-        permissions: oldPermissions,
-        setUserProfile,
-      } = useAuthStore.getState();
-      const incomingUserId = data?.user?.id ?? data?.user?._id;
+      const state = useAuthStore.getState();
+      const currentUser = state.user;
+      const oldPermissions = state.permissions;
 
-      if (!user || incomingUserId !== user._id) return;
+      if (!currentUser) return;
 
-      const roles: Role[] = data?.roles ?? [];
-      const permissions: Permission[] = data?.permissions ?? [];
+      // FIX 1: Handle both object and string ID from backend
+      const incomingUserId = data?.user?._id || data?.user?.id || (typeof data?.user === "string" ? data.user : null);
 
+      // FIX 2: Ensure ID comparison is robust
+     if (!incomingUserId || incomingUserId.toString() !== currentUser._id.toString()) {
+      console.warn("ID mismatch. Current:", currentUser._id, "Incoming:", incomingUserId);
+      return;
+  }
+
+      const newRoles = data?.roles ?? [];
+      const newPermissions = data?.permissions ?? [];
+
+      // FIX 3: Check for lost resources BEFORE updating state
       const lostResources = oldPermissions
-        .filter((old) => !permissions.find((p) => p.resource === old.resource))
+        .filter(
+          (old) => !newPermissions.find((p) => p.resource === old.resource),
+        )
         .map((p) => p.resource);
 
-      setUserProfile(user, roles, permissions);
+      // Update Zustand (Zustand handles the reactivity)
+      state.setUserProfile(currentUser, [...newRoles], [...newPermissions]);
 
+      // UI Feedback
       if (lostResources.length > 0) {
-        toast.warning("Permissions updated by admin", {
+        toast.warning("Permissions updated", {
           description: `Lost access to: ${lostResources.join(", ")}`,
           duration: 10000,
         });
@@ -117,7 +132,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         toast.success("Your permissions were updated");
       }
 
-      // Delay the refresh so the toast isn't immediately destroyed
+      // Next.js refresh
       setTimeout(() => {
         router.refresh();
       }, 100);
