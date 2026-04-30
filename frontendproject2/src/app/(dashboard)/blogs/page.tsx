@@ -34,7 +34,7 @@ export default function BlogsPage() {
               <FileText className="h-4 w-4 text-slate-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">4</div>
+              <div className="text-2xl font-bold">3</div>
             </CardContent>
           </Card>
 
@@ -44,7 +44,7 @@ export default function BlogsPage() {
               <Eye className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5</div>
+              <div className="text-2xl font-bold">2</div>
             </CardContent>
           </Card>
 
@@ -54,7 +54,7 @@ export default function BlogsPage() {
               <Edit className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">6</div>
+              <div className="text-2xl font-bold">1</div>
             </CardContent>
           </Card>
 

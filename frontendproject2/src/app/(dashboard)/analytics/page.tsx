@@ -216,7 +216,7 @@ export default function AnalyticsPage() {
                     <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-linear-to-r from-blue-500 to-purple-500"
-                        style={{ width: `30%` }}
+                        style={{ width: `33.7%` }}
                       />
                     </div>
                     <span className="text-sm font-medium w-12 text-right">
@@ -236,7 +236,7 @@ export default function AnalyticsPage() {
                     <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-linear-to-r from-blue-500 to-purple-500"
-                        style={{ width: `25%` }}
+                        style={{ width: `27.5%` }}
                       />
                     </div>
                     <span className="text-sm font-medium w-12 text-right">
@@ -256,7 +256,7 @@ export default function AnalyticsPage() {
                     <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-linear-to-r from-blue-500 to-purple-500"
-                        style={{ width: `20%` }}
+                        style={{ width: `21.8%` }}
                       />
                     </div>
                     <span className="text-sm font-medium w-12 text-right">

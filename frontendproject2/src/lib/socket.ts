@@ -11,7 +11,7 @@ export function createSocket(user?: string) {
     path: "/ws",
     autoConnect: false,
     reconnection: true,
-    auth: user ? { user } : {},
+    query: user ? { userId: user } : {},
   });
 }
 export function getSocket(userId?: string) {

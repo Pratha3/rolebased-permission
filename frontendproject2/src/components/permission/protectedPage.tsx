@@ -27,11 +27,11 @@ export function ProtectedPage({
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="text-6xl mb-4">🔒</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">No Access</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold text-slate-100 mb-2">No Access</h2>
+          <p className="text-slate-400">
             You don't have permission to view this page.
           </p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-slate-500 mt-2">
             Required: {action} access to {resource}
           </p>
         </div>

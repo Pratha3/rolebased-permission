@@ -29,20 +29,25 @@ export function ProtectedButton({
   if (!hasPermission && variant === "hide") return null;
 
   const disabled = !hasPermission && variant === "disable";
-  const ariaLabel = typeof children === "string" ? children : undefined;
   const title = tooltip ?? (disabled ? `Requires ${action} on ${resource}` : undefined);
 
-  
-  if (href) {
+  if (href && !disabled) {
     return (
-      <Link href={href} className={className} aria-label={ariaLabel} title={title} onClick={onClick}>
+      <Link href={href} className={className} title={title} onClick={onClick}>
         {children}
       </Link>
     );
   }
 
   return (
-    <button type="button" onClick={onClick} className={className} aria-label={ariaLabel} title={title}>
+    <button
+      type="button"
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      className={className}
+      title={title}
+      aria-disabled={disabled}
+    >
       {children}
     </button>
   );

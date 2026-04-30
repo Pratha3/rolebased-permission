@@ -9,7 +9,9 @@ import {
   CheckCircle,
   Clock,
   MessageSquare,
-  Send
+  Send,
+  UserCheck,
+  XCircle,
 } from "lucide-react";
 
 export default function InquiriesPage() {
@@ -52,7 +54,7 @@ export default function InquiriesPage() {
               <Clock className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5</div>
+              <div className="text-2xl font-bold">1</div>
             </CardContent>
           </Card>
 
@@ -62,7 +64,7 @@ export default function InquiriesPage() {
               <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">4</div>
+              <div className="text-2xl font-bold">1</div>
             </CardContent>
           </Card>
         </div>
@@ -73,6 +75,7 @@ export default function InquiriesPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {/* Open inquiry */}
               <div className="flex items-start justify-between p-4 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -89,9 +92,29 @@ export default function InquiriesPage() {
                     <p className="mt-1">Date: 2024-03-15</p>
                   </div>
                 </div>
-
+                <div className="flex items-center gap-2 shrink-0 ml-4">
+                  <ProtectedSection resource="inquiries" action="respond">
+                    <Button variant="outline" size="sm">
+                      <Send className="h-4 w-4" />
+                      Respond
+                    </Button>
+                  </ProtectedSection>
+                  <ProtectedSection resource="inquiries" action="assign">
+                    <Button variant="outline" size="sm">
+                      <UserCheck className="h-4 w-4" />
+                      Assign
+                    </Button>
+                  </ProtectedSection>
+                  <ProtectedSection resource="inquiries" action="close">
+                    <Button variant="outline" size="sm">
+                      <XCircle className="h-4 w-4" />
+                      Close
+                    </Button>
+                  </ProtectedSection>
+                </div>
               </div>
 
+              {/* In-progress inquiry */}
               <div className="flex items-start justify-between p-4 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -109,9 +132,23 @@ export default function InquiriesPage() {
                     <p className="mt-1">Assigned to: John Doe</p>
                   </div>
                 </div>
-
+                <div className="flex items-center gap-2 shrink-0 ml-4">
+                  <ProtectedSection resource="inquiries" action="respond">
+                    <Button variant="outline" size="sm">
+                      <Send className="h-4 w-4" />
+                      Respond
+                    </Button>
+                  </ProtectedSection>
+                  <ProtectedSection resource="inquiries" action="close">
+                    <Button variant="outline" size="sm">
+                      <XCircle className="h-4 w-4" />
+                      Close
+                    </Button>
+                  </ProtectedSection>
+                </div>
               </div>
 
+              {/* Closed inquiry — read-only, no action buttons */}
               <div className="flex items-start justify-between p-4 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -128,15 +165,6 @@ export default function InquiriesPage() {
                     <p className="mt-1">Date: 2024-03-10</p>
                     <p className="mt-1">Assigned to: Jane Smith</p>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <ProtectedSection resource="inquiries" action="respond">
-                    <Button variant="outline" size="sm">
-                      <Send className="h-4 w-4" />
-                      Respond
-                    </Button>
-                  </ProtectedSection>
                 </div>
               </div>
             </div>

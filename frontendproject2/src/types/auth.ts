@@ -43,6 +43,6 @@ export interface LoginCredentials {
   password: string;
 }
 
-export function getId(obj:{_id?:string}):string{
-  return (obj._id) as string;
+export function getId(obj: { _id?: string; id?: string }): string {
+  return (obj._id ?? obj.id) as string;
 }

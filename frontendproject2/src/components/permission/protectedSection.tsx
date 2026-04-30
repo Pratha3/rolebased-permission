@@ -1,14 +1,12 @@
 "use client";
 import { usePermission } from "@/hooks/usePermission";
-import { useRouter } from "next/navigation";
-import { ReactNode, useEffect } from "react";
+import { ReactNode } from "react";
 
 interface ProtectedSectionProps {
   resource: string;
   action: string;
   fallback?: ReactNode;
   children: ReactNode;
-  redirectTo?: string;
 }
 
 export function ProtectedSection({
@@ -16,17 +14,8 @@ export function ProtectedSection({
   action,
   fallback = null,
   children,
-  redirectTo = "/dashboard?error=unauthorized"
 }: ProtectedSectionProps) {
   const hasPermission = usePermission(resource, action);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!hasPermission) {
-      // replace prevents the "back-button loop"
-      router.replace(redirectTo);
-    }
-  }, [hasPermission, router, redirectTo]);
 
   if (!hasPermission) {
     return <>{fallback}</>;
