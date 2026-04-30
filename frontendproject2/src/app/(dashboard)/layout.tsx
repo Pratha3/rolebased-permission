@@ -2,8 +2,6 @@
 
 import { Sidebar } from "@/components/common/sidebar";
 import { PermissionWatcher } from "@/components/permission/permissionwatcher";
-import { useAuth } from "@/hooks/useAuth";
-import { useAuthStore } from "@/store/userStore";
 import { Menu, Search, X } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -12,7 +10,6 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 

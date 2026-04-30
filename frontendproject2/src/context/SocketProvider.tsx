@@ -83,6 +83,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       setPermissions(newPermissions);
       console.log("permissions recalculated, count:", newPermissions.length);
       toast.info(`Your "${updatedRole.name}" role permissions were updated`);
+      router.refresh();
     });
 
     // user.permissions: backend pre-maps _id → id
@@ -105,15 +106,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         .filter((old) => !permissions.find((p) => p.resource === old.resource))
         .map((p) => p.resource);
 
-      setUserProfile(user, data.roles, data.permissions);
-
-      // 2. Show the toast
-      toast.success("Permissions updated by admin");
-
-      // 3. Delay the refresh so the toast isn't immediately destroyed
-      setTimeout(() => {
-        router.refresh();
-      }, 100);
+      setUserProfile(user, roles, permissions);
 
       if (lostResources.length > 0) {
         toast.warning("Permissions updated by admin", {
@@ -123,6 +116,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         toast.success("Your permissions were updated");
       }
+
+      // Delay the refresh so the toast isn't immediately destroyed
+      setTimeout(() => {
+        router.refresh();
+      }, 100);
     });
 
     socket.connect();
