@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react";
 import { io, Socket } from "socket.io-client";
 const URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -11,7 +12,8 @@ export function createSocket(user?: string) {
     path: "/ws",
     autoConnect: false,
     reconnection: true,
-    query: user ? { userId: user } : {},
+    // query: user ? { userId: user } : {},
+    auth: user ? { userId: user } : {},
   });
 }
 export function getSocket(userId?: string) {
