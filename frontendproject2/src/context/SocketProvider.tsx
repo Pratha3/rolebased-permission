@@ -115,7 +115,9 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       // FIX 3: Check for lost resources BEFORE updating state
       const lostResources = oldPermissions
         .filter(
-          (old) => !newPermissions.find((p) => p.resource === old.resource),
+          (old) => !newPermissions.find(function (p: { resource: string; }) {
+            return p.resource === old.resource;
+          }),
         )
         .map((p) => p.resource);
 
