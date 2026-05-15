@@ -35,7 +35,18 @@ const {
   addRoleToUser,
   removeRoleFromUser,
   addPermissionToRole,
+  assignInquiry,
+  archiveBlog,
+  closeInquiry,
+  createBlog,
+  getBlog,
+  getInquiry,
+  listBlogs,
+  listInquiries,
+  publishBlog,
   removePermissionFromRole,
+  respondToInquiry,
+  updateBlog,
 } = require("./store");
 
 const app = express();
@@ -50,6 +61,133 @@ app.get("/health", (req, res) =>
 
 app.get("/resources", (req, res) => res.json(resources));
 app.get("/permissions", (req, res) => res.json(resources));
+
+app.get(
+  "/blogs",
+  authRequired,
+  requirePermission("blogs", "view"),
+  asyncHandler(async (req, res) => {
+    res.json(await listBlogs());
+  })
+);
+
+app.post(
+  "/blogs",
+  authRequired,
+  requirePermission("blogs", "create"),
+  asyncHandler(async (req, res) => {
+    const { title, excerpt, content } = req.body || {};
+    if (!title || !String(title).trim()) {
+      return res.status(400).json({ error: "Blog title is required" });
+    }
+    const blog = await createBlog({
+      title: String(title).trim(),
+      excerpt: excerpt ? String(excerpt).trim() : "",
+      content: content ? String(content) : "",
+      authorId: req.user._id,
+      authorName: req.user.name,
+    });
+    socket.broadcast("blog.created", blog);
+    res.status(201).json(blog);
+  })
+);
+
+app.patch(
+  "/blogs/:id",
+  authRequired,
+  requirePermission("blogs", "edit"),
+  asyncHandler(async (req, res) => {
+    const existing = await getBlog(req.params.id);
+    if (!existing) return res.status(404).json({ error: "Blog not found" });
+    const updated = await updateBlog(req.params.id, req.body || {});
+    socket.broadcast("blog.updated", updated);
+    res.json(updated);
+  })
+);
+
+app.post(
+  "/blogs/:id/publish",
+  authRequired,
+  requirePermission("blogs", "publish"),
+  asyncHandler(async (req, res) => {
+    const updated = await publishBlog(req.params.id);
+    if (!updated) return res.status(404).json({ error: "Blog not found" });
+    socket.broadcast("blog.updated", updated);
+    res.json(updated);
+  })
+);
+
+app.post(
+  "/blogs/:id/archive",
+  authRequired,
+  requirePermission("blogs", "archive"),
+  asyncHandler(async (req, res) => {
+    const updated = await archiveBlog(req.params.id);
+    if (!updated) return res.status(404).json({ error: "Blog not found" });
+    socket.broadcast("blog.updated", updated);
+    res.json(updated);
+  })
+);
+
+app.get(
+  "/inquiries",
+  authRequired,
+  requirePermission("inquiries", "view"),
+  asyncHandler(async (req, res) => {
+    res.json(await listInquiries());
+  })
+);
+
+app.post(
+  "/inquiries/:id/assign",
+  authRequired,
+  requirePermission("inquiries", "assign"),
+  asyncHandler(async (req, res) => {
+    const { userId } = req.body || {};
+    if (!userId) return res.status(400).json({ error: "userId is required" });
+    const inquiry = await getInquiry(req.params.id);
+    if (!inquiry) return res.status(404).json({ error: "Inquiry not found" });
+    const assignee = await getUser(userId);
+    if (!assignee) return res.status(404).json({ error: "Assignee not found" });
+    const updated = await assignInquiry(req.params.id, assignee);
+    socket.broadcast("inquiry.updated", updated);
+    res.json(updated);
+  })
+);
+
+app.post(
+  "/inquiries/:id/respond",
+  authRequired,
+  requirePermission("inquiries", "respond"),
+  asyncHandler(async (req, res) => {
+    const { response } = req.body || {};
+    if (!response || !String(response).trim()) {
+      return res.status(400).json({ error: "response is required" });
+    }
+    const inquiry = await getInquiry(req.params.id);
+    if (!inquiry) return res.status(404).json({ error: "Inquiry not found" });
+    const updated = await respondToInquiry(
+      req.params.id,
+      req.user,
+      String(response).trim()
+    );
+    socket.broadcast("inquiry.updated", updated);
+    res.json(updated);
+  })
+);
+
+app.post(
+  "/inquiries/:id/close",
+  authRequired,
+  requirePermission("inquiries", "close"),
+  asyncHandler(async (req, res) => {
+    const inquiry = await getInquiry(req.params.id);
+    if (!inquiry) return res.status(404).json({ error: "Inquiry not found" });
+    const updated = await closeInquiry(req.params.id, req.user);
+    socket.broadcast("inquiry.updated", updated);
+    res.json(updated);
+  })
+);
 
 // Auth
 app.post("/auth/login", asyncHandler(handleLogin));
@@ -417,4 +555,17 @@ function asyncHandler(fn) {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
+}
+
+function requirePermission(resource, action) {
+  return asyncHandler(async (req, res, next) => {
+    const verdict = await evaluateAccess(req.user._id, resource, action);
+    if (!verdict.allowed) {
+      return res.status(403).json({
+        error: `Requires ${action} permission on ${resource}`,
+        reasons: verdict.reasons,
+      });
+    }
+    next();
+  });
 }

@@ -7,9 +7,11 @@ import {
   LayoutDashboard,
   LogOut,
   MessageSquare,
+  Shield,
   User,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import { useIsAdmin } from "@/hooks/usePermission";
 import { ProtectedButton } from "../permission/protectedButton";
 
 const navigation = [
@@ -52,6 +54,7 @@ export function Sidebar() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const isAdmin = useIsAdmin();
 
   const onLogout = async () => {
     clearAuth();
@@ -112,6 +115,25 @@ export function Sidebar() {
             </ProtectedButton>
           );
         })}
+
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => router.push("/access")}
+            className={`
+              group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+              transition-all duration-200
+              ${pathname === "/access"
+                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/50"
+                : "text-slate-400 hover:bg-slate-800/50 hover:text-white"}
+            `}
+          >
+            <Shield
+              className={`relative h-5 w-5 shrink-0 ${pathname === "/access" ? "text-white" : "text-slate-500 group-hover:text-blue-400"}`}
+            />
+            <span className="relative truncate">Access Control</span>
+          </button>
+        )}
       </nav>
 
       <div className="border-t border-slate-800 p-3">

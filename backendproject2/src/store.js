@@ -1,8 +1,10 @@
 const { randomUUID } = require("crypto");
 const Role = require("./models/role");
 const User = require("./models/user");
+const Blog = require("./models/blog");
+const Inquiry = require("./models/inquiry");
 const resources = require("./resources");
-const { seedRoles, buildSeedUsers } = require("./seed-data");
+const { seedBlogs, seedInquiries, seedRoles, buildSeedUsers } = require("./seed-data");
 const { hashPassword } = require("./security");
 
 const resourceIds = new Set(resources.map((r) => r.id));
@@ -125,10 +127,110 @@ async function getUsersWithRole(roleId) {
 async function seedDatabase() {
   await Role.deleteMany({});
   await User.deleteMany({});
+  await Blog.deleteMany({});
+  await Inquiry.deleteMany({});
   await Role.insertMany(seedRoles);
   const users = buildSeedUsers();
   await User.insertMany(users);
-  return { roles: seedRoles, users };
+  await Blog.insertMany(seedBlogs);
+  await Inquiry.insertMany(seedInquiries);
+  return { roles: seedRoles, users, blogs: seedBlogs, inquiries: seedInquiries };
+}
+
+async function listBlogs() {
+  return Blog.find({}).sort({ createdAt: -1 }).lean();
+}
+
+async function getBlog(id) {
+  return Blog.findById(id).lean();
+}
+
+async function createBlog(payload) {
+  const blog = {
+    _id: payload._id || `blog_${randomUUID().slice(0, 8)}`,
+    title: payload.title,
+    excerpt: payload.excerpt || "",
+    content: payload.content || "",
+    status: "draft",
+    authorId: payload.authorId,
+    authorName: payload.authorName,
+    views: 0,
+    publishedAt: null,
+  };
+  await Blog.create(blog);
+  return getBlog(blog._id);
+}
+
+async function updateBlog(id, patch) {
+  const update = {};
+  if (patch.title !== undefined) update.title = patch.title;
+  if (patch.excerpt !== undefined) update.excerpt = patch.excerpt;
+  if (patch.content !== undefined) update.content = patch.content;
+  if (!Object.keys(update).length) return getBlog(id);
+  return Blog.findByIdAndUpdate(id, update, { new: true, lean: true });
+}
+
+async function publishBlog(id) {
+  return Blog.findByIdAndUpdate(
+    id,
+    { status: "published", publishedAt: new Date() },
+    { new: true, lean: true }
+  );
+}
+
+async function archiveBlog(id) {
+  return Blog.findByIdAndUpdate(
+    id,
+    { status: "archived" },
+    { new: true, lean: true }
+  );
+}
+
+async function listInquiries() {
+  return Inquiry.find({}).sort({ createdAt: -1 }).lean();
+}
+
+async function getInquiry(id) {
+  return Inquiry.findById(id).lean();
+}
+
+async function assignInquiry(id, assignee) {
+  return Inquiry.findByIdAndUpdate(
+    id,
+    {
+      assignedToId: assignee._id,
+      assignedToName: assignee.name,
+      status: "in-progress",
+    },
+    { new: true, lean: true }
+  );
+}
+
+async function respondToInquiry(id, responder, response) {
+  return Inquiry.findByIdAndUpdate(
+    id,
+    {
+      response,
+      respondedById: responder._id,
+      respondedByName: responder.name,
+      respondedAt: new Date(),
+      status: "in-progress",
+    },
+    { new: true, lean: true }
+  );
+}
+
+async function closeInquiry(id, closer) {
+  return Inquiry.findByIdAndUpdate(
+    id,
+    {
+      status: "closed",
+      closedById: closer._id,
+      closedByName: closer.name,
+      closedAt: new Date(),
+    },
+    { new: true, lean: true }
+  );
 }
 
 async function findUserByEmail(email) {
@@ -206,4 +308,15 @@ module.exports = {
   removeRoleFromUser,
   addPermissionToRole,
   removePermissionFromRole,
+  listBlogs,
+  getBlog,
+  createBlog,
+  updateBlog,
+  publishBlog,
+  archiveBlog,
+  listInquiries,
+  getInquiry,
+  assignInquiry,
+  respondToInquiry,
+  closeInquiry,
 };

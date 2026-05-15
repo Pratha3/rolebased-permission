@@ -22,7 +22,8 @@ export interface Role {
 }
 
 export interface Resource {
-  _id: string;
+  _id?: string;
+  id?: string;
   name: string;
   actions: string[];
 }
